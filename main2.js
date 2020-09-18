@@ -45,37 +45,7 @@ class WebGl {
     }
 
     shadersDefine() {
-        // Vertex shader program
         this.vsSource = `
-            attribute vec4 aVertexPosition;
-            uniform mat4 uModelViewMatrix;
-            uniform mat4 uProjectionMatrix;
-            varying highp vec3 fragCoord;
-            void main() {
-              gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-              fragCoord = vec3(gl_Position.x, gl_Position.y, gl_Position.z);
-            }   
-            `;
-
-        // Fragment shader program
-
-        this.fsSource = `
-            precision highp float;
-            uniform float uPositionX1;
-            uniform float uPositionY1;
-            uniform float uPositionX2;
-            uniform float uPositionY2;
-            uniform float uSimple;
-            
-            varying highp vec3 fragCoord;
-            
-            void main() {
-              gl_FragColor = vec4(fragCoord.z * 4.0, 0.5, fragCoord.z, 1);
-            }
-              `;
-              
-              
-  this.vsTextureSource  = `
     attribute vec4 aVertexPosition;
     attribute vec2 aTextureCoord;
 
@@ -87,10 +57,9 @@ class WebGl {
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
-    }
-  `;
-              
-   const fsSourceTexture = `
+    }            `;
+
+        this.fsSource = `
     varying highp vec2 vTextureCoord;
 
     uniform sampler2D uSampler;
@@ -99,8 +68,8 @@ class WebGl {
       gl_FragColor = texture2D(uSampler, vTextureCoord);
     }
   `;
-    }
-
+}
+              
     shadersLoad() {
         const shaderProgram = initShaderProgram(this.gl, this.vsSource, this.fsSource);
         this.programInfo = {
