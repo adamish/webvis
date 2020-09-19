@@ -31,12 +31,12 @@ class WebGl {
       const level = 0;
       const internalFormat = gl.ALPHA;
        this.textureWidth = 128;
-       this.textureHeight = 200;
+       this.textureHeight = 64;
+       this.textureHeadOffset = 0;
       const border = 0;
       const srcFormat = gl.ALPHA;
       const srcType = gl.UNSIGNED_BYTE;
-      const pixel = new Uint8Array(this.textureWidth * this.textureHeight * 3);
-      console.log(pixel.length);
+      const pixel = new Uint8Array(this.textureWidth * this.textureHeight * 4);
       gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                     this.textureWidth, this.textureHeight, border, srcFormat, srcType,
                     pixel);
@@ -63,28 +63,37 @@ class WebGl {
     varying highp vec2 vTextureCoord;
 
     uniform sampler2D uSampler;
-
+    uniform int textureHeadOffset;
+    uniform int textureHeight;
+    uniform int clock;
     void main(void) {
-      gl_FragColor = texture2D(uSampler, vTextureCoord);
+      mediump float o = float(textureHeadOffset) / float(textureHeight);
+      mediump float offset = o - vTextureCoord.y;
+      if (offset < 0.0) {
+         offset = 1.0 + offset;
+      }
+      mediump vec4 v = texture2D(uSampler, vec2(vTextureCoord.x, offset));
+      gl_FragColor = vec4(min(v.a * 5.0, 1.0), 0.4 * abs(sin(float(clock)/180.0)) , 0.0, 1.0);
     }
   `;
 }
               
     shadersLoad() {
+        var gl = this.gl;
         const shaderProgram = initShaderProgram(this.gl, this.vsSource, this.fsSource);
         this.programInfo = {
             program: shaderProgram,
             attribLocations: {
                 vertexPosition: this.gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+                textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
             },
             uniformLocations: {
                 projectionMatrix: this.gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
                 modelViewMatrix: this.gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-                positionX1: this.gl.getUniformLocation(shaderProgram, 'uPositionX1'),
-                positionY1: this.gl.getUniformLocation(shaderProgram, 'uPositionY1'),
-                positionX2: this.gl.getUniformLocation(shaderProgram, 'uPositionX2'),
-                positionY2: this.gl.getUniformLocation(shaderProgram, 'uPositionY2'),
-                simple: this.gl.getUniformLocation(shaderProgram, 'uSimple'),
+                 uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
+                 textureHeadOffset: gl.getUniformLocation(shaderProgram, 'textureHeadOffset'),
+              textureHeight: gl.getUniformLocation(shaderProgram, 'textureHeight'),
+                clock: gl.getUniformLocation(shaderProgram, 'clock')
             },
         };
     }
@@ -92,59 +101,48 @@ class WebGl {
     initBuffers() {
         const positionBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
-        var positions = [];
-        this.width = 128;
-        this.height = 4;
-
-        for (var y = 0; y < this.height; y++) {
-            for (var x = 0; x < this.width; x++) {
-                positions.push(x / this.width);
-                positions.push(y / this.height);
-                positions.push(0);//sMath.sin((x + y) / 30));
-            }
-        }
+        const positions = [
+            -1.0,  1.0,
+             1.0,  1.0,
+            -1.0, -1.0,
+             1.0, -1.0,
+          ];
         this.gl.bufferData(this.gl.ARRAY_BUFFER,
-            3 * 4 * this.width * this.height,
-            this.gl.DYNAMIC_DRAW);
+            new Float32Array(positions),
+            this.gl.STATIC_DRAW);
+            
+        const textureCoord = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, textureCoord);
+        const positionsTexture = [
+            0.0,  0.0,
+            1.0,  0.0,
+            0.0,  1.0,
+            1.0,  1.0
+          ];
+        this.gl.bufferData(this.gl.ARRAY_BUFFER,
+            new Float32Array(positionsTexture),
+            this.gl.STATIC_DRAW);
+            
         return {
             position: positionBuffer,
+            textureCoord: textureCoord
         };
     }
     
     writeData(fft) {
-
-
-      //  var y = (this.clock * 1) % this.height;
-        
-         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.position);        
-                 
-        for (var y = 0; y < this.height; y++) {
-            var positions = [];
-            var i = 0;
-            for (var x = 0; x < this.width; x++) {
-                positions.push(x / this.width);
-                positions.push(y / this.height);
-                positions.push(fft[i] / 256.0);
-                i++;
-            }
-            
-         this.gl.bufferSubData(this.gl.ARRAY_BUFFER,
-            y * this.width * 4 * 3,
-            new Float32Array(positions),
-            0,
-            2);
-        }
         const gl = this.gl;
         
-        this.offset = (this.offset + 1) % this.textureHeight;
+        var offset = (this.clock % this.textureHeight);
         
-        //  gl.activeTexture(gl.TEXTURE0);
+          gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, this.offset, 0, this.textureWidth, 1, gl.ALPHA, gl.UNSIGNED_BYTE, fft);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, offset, this.textureWidth, 1, gl.ALPHA, gl.UNSIGNED_BYTE, fft);
+        if (offset == 0) {
+          //      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.textureWidth, this.textureHeight, gl.ALPHA, gl.UNSIGNED_BYTE, new Uint8Array(this.textureWidth * this.textureHeight));
+         }
 
-        
-         this.clock++;
-   
+    this.textureHeadOffset = offset;
+             this.clock++;
     }
 
     drawScene() {
@@ -154,11 +152,13 @@ class WebGl {
         this.gl.depthFunc(this.gl.LEQUAL);
 
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-
+        
+        this.gl.useProgram(this.programInfo.program);
+        
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.position);
         this.gl.vertexAttribPointer(
             this.programInfo.attribLocations.vertexPosition,
-            3,
+            2,
             this.gl.FLOAT,
             false,
             0,
@@ -197,7 +197,7 @@ class WebGl {
             this.rotateZ / 180 * Math.PI,
             [0, 0, 1]);
 
-        this.gl.useProgram(this.programInfo.program);
+
         this.gl.uniformMatrix4fv(
             this.programInfo.uniformLocations.modelViewMatrix,
             false,
@@ -207,17 +207,28 @@ class WebGl {
             false,
             projectionMatrix);
 
-        for (var y = 0; y < this.height; y++) {
-            this.gl.drawArrays(this.gl.LINE_STRIP, 0 + y * this.width, this.width);
-        }
+        this.gl.uniform1i(this.programInfo.uniformLocations.textureHeadOffset, this.textureHeadOffset);
+       this.gl.uniform1i(this.programInfo.uniformLocations.textureHeight, this.textureHeight);
+       this.gl.uniform1i(this.programInfo.uniformLocations.clock, this.clock);
         
         const gl = this.gl;
         
-         // Tell WebGL we want to affect texture unit 0
+          const num = 2; // every coordinate composed of 2 values
+    const type = gl.FLOAT; // the data in the buffer is 32 bit float
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffers.textureCoord);
+    gl.vertexAttribPointer(this.programInfo.attribLocations.textureCoord, num, type, false, 0, 0);
+    gl.enableVertexAttribArray(this.programInfo.attribLocations.textureCoord);
+    
           gl.activeTexture(gl.TEXTURE0);
-
-          // Bind the texture to texture unit 0
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
           gl.bindTexture(gl.TEXTURE_2D, this.texture);
+          gl.uniform1i(this.programInfo.uniformLocations.uSampler, 0);
+
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
     setRotateX(rotateX) {
@@ -252,20 +263,23 @@ rotateZ.addEventListener('input', function() {
     vis.setRotateZ(rotateZ.value);
 });
 
+
 class Input {
     init() {
-
+this.minDb = -30;
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
         .then(this.handleSuccess.bind(this));
     }
-
+    setMinDb(minDb) {
+        this.minDb = minDb;
+    }
     handleSuccess(stream) {
         const context = new AudioContext();
         this.analyser = context.createAnalyser();
-        this.analyser.fftSize = 256;
-        this.minDecibels = -90;
-                this.maxDecibels = -10;
+        this.analyser.fftSize = 512;
+        this.minDecibels = minDb;
+                this.maxDecibels = 0;
         this.fftArray = new Uint8Array(this.analyser.frequencyBinCount);
         this.analyserInit = true;    
        const source = context.createMediaStreamSource(stream);
@@ -305,5 +319,10 @@ function tick() {
     vis.setRotateY(clock % 360);
     clock++;
 }
+
+var minDb = document.getElementById("minDb");
+minDb.addEventListener('input', function() {
+    input.setMinDb(minDb.value);
+});
 
 tick();
