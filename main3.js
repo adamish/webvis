@@ -14,12 +14,13 @@ class WebGl {
             alert('Unable to initialize WebGL. Your browser or machine may not support it.');
             return;
         }
-        this.insertPos = 0;
+        
         this.shadersDefine();
         this.shadersLoad();
         this.clock = 0;
        this.textureWidth = 128;
-       this.textureHeight = 64;
+       this.textureHeight = 128;
+       this.insertPos = this.textureHeight - 1;
        this.bufferCyclic = new Float32Array(this.textureWidth * this.textureHeight);
       this.bufferPrerender = new Float32Array(this.textureWidth * this.textureHeight);
         this.buffers = this.initBuffers();
@@ -58,7 +59,7 @@ class WebGl {
     void main(void) {
       vec4 vertexPosition = vec4(aVertexPositionXY.x, aVertexPositionXY.y, aVertexPositionZ, 1.0);
       gl_Position = uProjectionMatrix * uModelViewMatrix * vertexPosition;
-      gl_PointSize = 1.0;
+      gl_PointSize = 1.0 + aVertexPositionZ;
     }`;
 
         this.fsSource = `
@@ -98,7 +99,6 @@ class WebGl {
             for (x = 0; x < this.textureWidth; x++) {
                 positionsXY.push(-0.5 + x / this.textureWidth);
                 positionsXY.push(-0.5 + y / this.textureHeight);
-               // positionsXY.push(0);
             }
         }
         this.gl.bufferData(this.gl.ARRAY_BUFFER,
@@ -130,40 +130,52 @@ class WebGl {
  
                  
         var dest = this.insertPos * this.textureWidth;
-        for (var i = 0; i < Math.min(fft.length, this.textureWidth); i++) {
+        var valid = Math.min(fft.length, this.textureWidth);
+        for (var i = 0; i < valid; i++) {
             this.bufferCyclic[dest++] = fft[i] / 256.0;
         }
-      if (fft.length != this.textureWidth) {
-      console.log(fft.length + " vs " + this.textureWidth);
+        if (fft.length != this.textureWidth) {
+           console.warn(fft.length + " vs " + this.textureWidth);
         }
-            
-         // void gl.bufferSubData(target, dstByteOffset, ArrayBufferView srcData, srcOffset, length);
-         
-         var oldStart = this.insertPos + 1;
-         var rows = this.textureHeight - oldStart + 1;
-         if (oldStart < this.textureHeight -1) {
-             // old bit first
-                     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.bufferZ);        
+           
 
-             this.gl.bufferSubData(this.gl.ARRAY_BUFFER,
-                0,
-                this.bufferCyclic,
-                oldStart * this.textureWidth , 
-                rows * this.textureWidth);
+           
+        // 0: 14
+        // 1: 13
+        // 2: 17 <== insert pos here
+        // 3: 16
+        // 4: 15
+        
+        // 0: 14, 14
+        // 1: 13, 13
+        // 2: 12, 12 
+        // 3: 11, 11
+        // 4: 15, 15 <== insert pos here
+        
+        
+         // void gl.bufferSubData(target, offset, ArrayBuffer srcData); 
+         // render (17, 16, 15) to position 0
+        var headRows = this.textureHeight - this.insertPos;
+        var headPortion = this.bufferCyclic.slice(this.insertPos * this.textureWidth);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.bufferZ);     
+        this.gl.bufferSubData(this.gl.ARRAY_BUFFER,
+            0,
+            headPortion);
+
+        // head (14, 13)
+        var tailRows = this.insertPos;
+        var tailPortion = this.bufferCyclic.slice(0, (tailRows * this.textureWidth));
+        if (tailRows > 0) {
+            this.gl.bufferSubData(this.gl.ARRAY_BUFFER,
+                    headRows * this.textureWidth * 4, // <== byte location
+                    tailPortion);
+
         }
-        console.log(oldStart  + " " + rows + " " + rows * this.textureWidth);
-        // head 
-        
- //       var rows2 = this.insertPos + 1;
-   //      this.gl.bufferSubData(this.gl.ARRAY_BUFFER,
-     //    (this.textureHeight - rows2) * this.textureWidth * 4,
-     //   this.bufferCyclic,
-       // 0, 
-         //  rows2 * this.textureWidth);
-                
-        this.insertPos = (this.insertPos + 1) % this.textureHeight;
-        
-      
+
+        this.insertPos--;
+        if (this.insertPos < 0) {
+            this.insertPos = this.textureHeight - 1;
+        }
     }
 
     drawScene() {
@@ -256,6 +268,12 @@ class WebGl {
         this.rotateZ = rotateZ;
         this.drawScene();
     }
+        getTextureWidth() {
+        return this.textureWidth;
+    }
+    getTextureHeight() {
+        return this.textureHeight;
+    }
 
 }
 
@@ -285,14 +303,15 @@ this.minDb = -30;
     }
     setMinDb(minDb) {
         this.minDb = minDb;
+        this.analyser.minDecibels = minDb;
     }
     handleSuccess(stream) {
         const context = new AudioContext();
         this.analyser = context.createAnalyser();
         this.analyser.fftSize = 256;
-        this.minDecibels = minDb;
-                this.maxDecibels = 0;
-        this.fftArray = new Uint8Array(this.analyser.frequencyBinCount);
+        this.analyser.minDecibels = -50;
+        this.analyser.maxDecibels = -10;
+        this.fftArray = new Float32Array(this.analyser.frequencyBinCount);
         this.analyserInit = true;    
        const source = context.createMediaStreamSource(stream);
        // const processor = context.createScriptProcessor(1024, 1, 1);
@@ -309,7 +328,8 @@ this.minDb = -30;
     }
     getFft() {
         if (this.analyserInit) {
-            this.analyser.getByteFrequencyData(this.fftArray);
+            this.analyser.getFloatFrequencyData(this.fftArray);
+         //   console.log(this.fftArray);
         }
         return this.fftArray;
     }
@@ -328,9 +348,36 @@ function tick() {
         vis.drawScene();
     }
     requestAnimationFrame(tick);
-    vis.setRotateY(clock % 360);
+    //vis.setRotateY(clock % 360);
     clock++;
 }
+
+
+function tick2() {
+    var i;
+    var diff;
+    var width = vis.getTextureWidth();
+        var fft = new Uint8Array(width);
+    var target = clock % width;
+    for (i = 0; i < width; i++) {
+        if (i == target) {
+            fft[i] = 20;
+        }
+    }
+    //console.log(fft);
+    
+    if (fft) {
+        vis.writeData(fft);
+        vis.drawScene();
+    }
+    if (clock < 10 * vis.getTextureHeight()) {
+        requestAnimationFrame(tick2);
+    }
+    //vis.setRotateY(clock % 360);
+    clock++;
+}
+
+
 
 var minDb = document.getElementById("minDb");
 minDb.addEventListener('input', function() {
