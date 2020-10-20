@@ -1,22 +1,30 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>WebGL Demo2</title>
+    <title>Webvis</title>
     <meta charset="utf-8">
   </head>
 
   <body>
-    <canvas id="glcanvas" width="1920" height="1080"></canvas>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
   </body>
 
 <div>
 <span>X</span> <input type="range" min="0" max="360" value="0" id="rotateX" step="1">
 <span>Y</span> <input type="range" min="0" max="360" value="0" id="rotateY" step="1">
 <span>Z</span> <input type="range" min="0" max="360" value="0" id="rotateZ" step="1">
+<button id="fullscreen">Fullscreen</button>
+<button id="switch-vis">Switch vis</button>
 </div>
  
-   <script src="common.js"></script> 
    <script src="gl-matrix.js"></script> 
+   <script src="input.js" ></script> 
+   <script src="plugin.js" ></script> 
+   <script src="plugins/landscape.js" ></script> 
+   <script src="plugins/matrix.js" ></script> 
+
+   <script src="stage.js" ></script>
+   
    <script src="main.js" ></script> 
 
 </html>
