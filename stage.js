@@ -4,6 +4,7 @@ class Stage {
         this.rotateY = 0;
         this.rotateZ = -30;
         this.clock = 0;
+        this.context = {};
     }
     
     init(target, input) {
@@ -56,6 +57,7 @@ class Stage {
         this.plugin.loadVariables(gl, shaderProgram);
 
         this.plugin.init(gl, {frequencyBinCount: this.input.getFrequencyBinCount()});
+        this.pluginTime0 = Date.now();
     }
 
     draw() {
@@ -108,8 +110,8 @@ class Stage {
             false,
             projectionMatrix);
 
-        this.plugin.draw();
-
+        this.context.clockMillis = Date.now() - this.pluginTime0;
+        this.plugin.draw(this.context);
     }
 
     setRotateX(rotateX) {

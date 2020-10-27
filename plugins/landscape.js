@@ -7,24 +7,42 @@ class PluginLandscape extends Plugin {
 			uniform mat4 uModelViewMatrix;
 		    uniform mat4 uProjectionMatrix;
 
-			varying highp vec3 vCunt;
+			varying highp vec3 vertexPositionRaw;
 
 		    void main(void) {
 		      vec4 vertexPosition = vec4(aVertexPositionXY.x, aVertexPositionXY.y, aVertexPositionZ, 1.0);
 		      gl_Position = uProjectionMatrix * uModelViewMatrix * vertexPosition;
-		      vCunt = vec3(aVertexPositionXY.x, aVertexPositionXY.y, aVertexPositionZ);
+		      vertexPositionRaw = vec3(vertexPosition);
 		      gl_PointSize = 1.0 + aVertexPositionZ;
 		    }`;
 	}
 
 	getFragmentShader() {
 		return `
-    		varying highp vec3 vCunt;
+    		varying highp vec3 vertexPositionRaw;            
+            uniform lowp float uClockMillis;
 
 			void main(void) {
-				lowp float r = abs(sin(vCunt.x));
-				lowp float g = abs(sin(0.3 + vCunt.z));
-				lowp float b = abs(sin(2.0 * vCunt.y));
+				lowp float r = 0.2;
+				lowp float g = 0.2;
+				lowp float b = 0.2;
+                lowp vec2 point = vec2(vertexPositionRaw.x, vertexPositionRaw.y);
+                lowp vec2 light1 = vec2(0.6 * sin(uClockMillis / 1000.0), 0.6 * cos(uClockMillis / 1000.0));
+                lowp vec2 light2 = vec2(0.6 * sin(uClockMillis / 500.0), 0.6 * cos(uClockMillis / 1000.0));
+                lowp vec2 light3 = vec2(0.6 * sin(uClockMillis / 1000.0), 0.6 * cos(uClockMillis / 500.0));
+
+                lowp float d1 = distance(point, light1);
+                if (d1 < 0.2) {
+                    r = 1.0;
+                }
+                lowp float d2 = distance(point, light2);
+                if (d2 < 0.2) {
+                    g = 1.0;
+                }
+                lowp float d3 = distance(point, light3);
+                if (d3 < 0.2) {
+                    b = 1.0;
+                }                                
 	      		gl_FragColor = vec4(r, g, b, 1.0);
 	    	}`
 	}
@@ -32,6 +50,8 @@ class PluginLandscape extends Plugin {
 	loadVariables(gl, shaderProgram) {
 		this.vertexPositionXY = gl.getAttribLocation(shaderProgram, 'aVertexPositionXY');
         this.vertexPositionZ = gl.getAttribLocation(shaderProgram, 'aVertexPositionZ');
+        
+        this.uClockMillis = gl.getUniformLocation(shaderProgram, 'uClockMillis');
 	}
 
 	init(gl, options) {
@@ -40,7 +60,10 @@ class PluginLandscape extends Plugin {
 		this.width = options.frequencyBinCount;
 		this.height = 100;
 		this.bufferCyclic = new Float32Array(this.width * this.height);
-        
+        this.lightX = 0;
+        this.lightY = 0;
+        this.clock = 0;
+
         const bufferXY = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, bufferXY);
         var positionsXY = [];
@@ -73,7 +96,7 @@ class PluginLandscape extends Plugin {
         var dest = this.insertPos * this.width;
         var valid = Math.min(fft.length, this.width);
         for (var i = 0; i < valid; i++) {
-            this.bufferCyclic[dest++] = fft[i] / 256.0;
+            this.bufferCyclic[dest++] = fft[i] / 512.0;
         }
 
         // example
@@ -107,7 +130,7 @@ class PluginLandscape extends Plugin {
         }
     }
 
-    draw() {
+    draw(context) {
     	const gl = this.gl;
     	gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferXY);
         gl.vertexAttribPointer(this.vertexPositionXY, 2, gl.FLOAT, false, 0, 0);
@@ -117,6 +140,10 @@ class PluginLandscape extends Plugin {
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vertexPositionZ);
         
+        gl.uniform1f(this.uLightX, this.lightX);
+        gl.uniform1f(this.uLightY, this.lightY);
+        gl.uniform1f(this.uClockMillis, context.clockMillis);
+
         //this.gl.drawArrays(this.gl.POINTS, 0, this.width * this.height);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferXY);
@@ -131,5 +158,6 @@ class PluginLandscape extends Plugin {
         	this.gl.drawArrays(this.gl.LINE_STRIP, y * this.width, this.width - 4);
 		}
 
+        this.clock++;
     }
 }
