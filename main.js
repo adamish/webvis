@@ -21,7 +21,7 @@ rotateZ.addEventListener('input', function() {
 var sizeCanvasToScreen = function() {
 	console.log("screen resize");
 	var canvas = document.getElementById("canvas");
-	canvas.width = window.innerWidth;
+	canvas.width = window.innerWidth;	
     canvas.height = window.innerHeight;
 };
 var fullscreen = document.getElementById("fullscreen");
@@ -32,7 +32,7 @@ fullscreen.addEventListener('click', function() {
 });
 
 window.addEventListener("resize", sizeCanvasToScreen, false);
-
+sizeCanvasToScreen();
 
 var switchVis = document.getElementById("switch-vis");
 switchVis.addEventListener('click', function() {
