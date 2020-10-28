@@ -8,7 +8,7 @@ class Stage {
     }
     
     init(target, input) {
-        this.gl = target.getContext('webgl');
+        this.gl = target.getContext('webgl', { preserveDrawingBuffer: true });
 
         if (!this.gl) {
             alert('Unable to initialize WebGL. Your browser or machine may not support it.');
@@ -20,7 +20,10 @@ class Stage {
         this.pluginIndex = 0;
 
         this.plugins.push(new PluginLandscape());
+        this.plugins.push(new KillThemAll());
+        this.plugins.push(new Horse());
         this.plugins.push(new PluginMatrix());
+        
         this.next();
         this.tick();
     }
@@ -33,6 +36,10 @@ class Stage {
     tick() {
         if ("fft" === this.plugin.getInputType()) {
             this.plugin.writeFft(input.getFft());
+        } else if ("fft-float" === this.plugin.getInputType()) {
+            this.plugin.writeFft(input.getFftFloat());
+        } else if ("time-float" === this.plugin.getInputType()) {
+            this.plugin.writeTime(input.getTimeFloat());
         }
         this.draw();
         requestAnimationFrame(this.tick.bind(this));
@@ -56,7 +63,7 @@ class Stage {
         };
         this.plugin.loadVariables(gl, shaderProgram);
 
-        this.plugin.init(gl, {frequencyBinCount: this.input.getFrequencyBinCount()});
+        this.plugin.init(gl, {frequencyBinCount: this.input.getFrequencyBinCount(), timeBinCount: this.input.getTimeBinCount()});
         this.pluginTime0 = Date.now();
     }
 

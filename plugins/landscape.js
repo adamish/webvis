@@ -140,8 +140,6 @@ class PluginLandscape extends Plugin {
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.vertexPositionZ);
         
-        gl.uniform1f(this.uLightX, this.lightX);
-        gl.uniform1f(this.uLightY, this.lightY);
         gl.uniform1f(this.uClockMillis, context.clockMillis);
 
         //this.gl.drawArrays(this.gl.POINTS, 0, this.width * this.height);
