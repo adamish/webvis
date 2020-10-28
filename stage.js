@@ -69,7 +69,7 @@ class Stage {
 
     draw() {
         const gl = this.gl;
-
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);

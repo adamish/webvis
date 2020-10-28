@@ -17,10 +17,22 @@ var rotateZ = document.getElementById("rotateZ");
 rotateZ.addEventListener('input', function() {
     stage.setRotateZ(rotateZ.value);
 });
+
+var sizeCanvasToScreen = function() {
+	console.log("screen resize");
+	var canvas = document.getElementById("canvas");
+	canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+};
 var fullscreen = document.getElementById("fullscreen");
 fullscreen.addEventListener('click', function() {
-    document.getElementById("canvas").requestFullscreen();
+	var canvas = document.getElementById("canvas");
+	sizeCanvasToScreen();
+    canvas.requestFullscreen();
 });
+
+window.addEventListener("resize", sizeCanvasToScreen, false);
+
 
 var switchVis = document.getElementById("switch-vis");
 switchVis.addEventListener('click', function() {
