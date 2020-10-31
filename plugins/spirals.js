@@ -1,4 +1,4 @@
-class KillThemAll extends Plugin {
+class PluginSpirals extends Plugin {
 	getVertexShader() {
 		return `
             attribute float aVertexPositionN;
@@ -98,3 +98,5 @@ class KillThemAll extends Plugin {
 
     }
 }
+
+pluginRegistry.add(new PluginSpirals());

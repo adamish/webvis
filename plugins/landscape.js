@@ -159,3 +159,5 @@ class PluginLandscape extends Plugin {
         this.clock++;
     }
 }
+
+pluginRegistry.add(new PluginLandscape());

@@ -136,3 +136,5 @@ class PluginMatrix extends Plugin {
 
     }
 }
+
+pluginRegistry.add(new PluginMatrix());

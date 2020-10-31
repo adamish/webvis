@@ -19,10 +19,7 @@ class Stage {
         this.plugins = [];
         this.pluginIndex = 0;
 
-        this.plugins.push(new PluginLandscape());
-        this.plugins.push(new KillThemAll());
-        this.plugins.push(new Horse());
-        this.plugins.push(new PluginMatrix());
+        this.plugins = pluginRegistry.getAll();
         
         this.next();
         this.tick();

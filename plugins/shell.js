@@ -1,4 +1,4 @@
-class Horse extends Plugin {
+class PluginShell extends Plugin {
 	getVertexShader() {
 		return `
             attribute vec4 aVertexPosition;
@@ -139,3 +139,5 @@ class Horse extends Plugin {
 
     }
 }
+
+pluginRegistry.add(new PluginShell())
