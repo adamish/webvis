@@ -117,10 +117,12 @@ class PluginMatrix extends Plugin {
         
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoord);
         gl.vertexAttribPointer(this.programInfo.textureCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.programInfo.textureCoord, 0); // webgl2        
         gl.enableVertexAttribArray(this.programInfo.textureCoord);
     
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         gl.vertexAttribPointer(this.programInfo.positionBuffer, 2, this.gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.programInfo.positionBuffer, 0); // webgl2        
         gl.enableVertexAttribArray(this.programInfo.positionBuffer);
 
         gl.activeTexture(gl.TEXTURE0);

@@ -8,7 +8,7 @@ class Stage {
     }
     
     init(target, input) {
-        this.gl = target.getContext('webgl', { preserveDrawingBuffer: true });
+        this.gl = target.getContext('webgl2', { preserveDrawingBuffer: true });
 
         if (!this.gl) {
             alert('Unable to initialize WebGL. Your browser or machine may not support it.');
@@ -71,6 +71,9 @@ class Stage {
         gl.clearDepth(1.0);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 

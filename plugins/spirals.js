@@ -85,10 +85,12 @@ class PluginSpirals extends Plugin {
         const gl = this.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferN);
         gl.vertexAttribPointer(this.vertexPositionN, 1, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.vertexPositionN, 0); // webgl2
         gl.enableVertexAttribArray(this.vertexPositionN);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.vertexPositionZ, 0); // webgl2        
         gl.enableVertexAttribArray(this.vertexPositionZ);
         
         gl.uniform1f(this.uClockMillis, context.clockMillis);

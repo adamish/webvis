@@ -134,10 +134,12 @@ class PluginLandscape extends Plugin {
     	const gl = this.gl;
     	gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferXY);
         gl.vertexAttribPointer(this.vertexPositionXY, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.vertexPositionXY, 0); // webgl2
         gl.enableVertexAttribArray(this.vertexPositionXY);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.vertexPositionZ, 0); // webgl2
         gl.enableVertexAttribArray(this.vertexPositionZ);
         
         gl.uniform1f(this.uClockMillis, context.clockMillis);
@@ -146,10 +148,12 @@ class PluginLandscape extends Plugin {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferXY);
         gl.vertexAttribPointer(this.vertexPositionXY, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.vertexPositionXY, 0); // webgl2        
         gl.enableVertexAttribArray(this.vertexPositionXY);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribDivisor(this.vertexPositionZ, 0); // webgl2        
         gl.enableVertexAttribArray(this.vertexPositionZ);
         var y = 0;
         for (y = 0; y < this.height; y++) {
