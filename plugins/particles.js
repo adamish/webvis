@@ -5,6 +5,7 @@ class PluginParticles extends Plugin {
             attribute vec2 aParticleShape;
             attribute vec3 aParticlePos0;
             attribute vec3 aParticleSpeed;
+            attribute float aParticleMod;
             attribute vec2 aTextureCoord;
 
             uniform mat4 uModelViewMatrix;
@@ -13,6 +14,7 @@ class PluginParticles extends Plugin {
 
             varying highp float fade;
             varying highp vec2 vTextureCoord;
+            varying highp float mod;
 
             void main(void) {
               
@@ -20,6 +22,7 @@ class PluginParticles extends Plugin {
               
               gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(newPos, 1.0);
               fade = 1.0 - distance(newPos, aParticlePos0) / 2.0;
+              mod = aParticleMod;
               vTextureCoord = aTextureCoord;
             }`;
 	}
@@ -29,10 +32,11 @@ class PluginParticles extends Plugin {
             varying highp float fade;
             uniform sampler2D uSampler;
             varying highp vec2 vTextureCoord;
+            varying highp float mod;
 
             void main(void) {
                 mediump vec4 v = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));
-                gl_FragColor = vec4(v.r, fade, 0, v.a * fade);
+                gl_FragColor = vec4(v.r + cos(mod), fade + mod, sin(mod), v.a * fade);
             }`
 	}
 
@@ -45,6 +49,7 @@ class PluginParticles extends Plugin {
         this.aParticleTime0 = gl.getAttribLocation(shaderProgram, 'aParticleTime0');
         this.aParticlePos0 = gl.getAttribLocation(shaderProgram, 'aParticlePos0');
         this.aParticleSpeed = gl.getAttribLocation(shaderProgram, 'aParticleSpeed');
+        this.aParticleMod = gl.getAttribLocation(shaderProgram, 'aParticleMod');
         this.aTextureCoord = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
         this.uSampler = gl.getUniformLocation(shaderProgram, 'uSampler');
         this.uTimeRelative = gl.getUniformLocation(shaderProgram, 'uTimeRelative');
@@ -52,16 +57,18 @@ class PluginParticles extends Plugin {
 
 	init(gl, options) {        
         this.gl = gl;
+        this.nextParticle = 0;
         this.particles = 5000;
         this.time0 = Date.now();
         this.particlesData = new Array(this.particles);
         var i = 0;
+        this.elementsPerParticle = 8;
         for (i = 0; i < this.particles; i++) {
-            this.particlesData[i] = new Float32Array(7);
+            this.particlesData[i] = new Float32Array(this.elementsPerParticle);
         }
         const bufferParticles = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, bufferParticles);
-        var data = new Float32Array(this.particles * 7);
+        var data = new Float32Array(this.particles * this.elementsPerParticle);
         // structure is
         // [timeStart, posX, posY, posZ, speedX, speedY, speedZ]
         
@@ -140,23 +147,55 @@ class PluginParticles extends Plugin {
 
 	writeFft(time) {
         const gl = this.gl;
+        
+        var i;
+        var start = Math.floor(time.length * 0.2);
+        var end = Math.floor(time.length * 0.8);
+        var radsPerIndex = Math.PI * 2 / (end - start);
+        var radsPerIndexFull = Math.PI * 2 / time.length;
+
+        var biggest = -1000;
+        var biggestI = 0;
+        for (i = time.length - 1; i > 0; i--) {
+            if (time[i] > biggest) {
+                biggestI = i;
+                biggest = time[i];
+            }
+        }
+
+        for (i = 0; i < time.length; i++) {
+            if (Math.abs(biggestI -i) < 2 && biggest > -50) {
+                this.spawnNextParticle(i * radsPerIndexFull, -60);
+            }
+        }
+
+        for (i = start; i < end; i+=1) {
+            if (time[i] > -90) {
+                this.spawnNextParticle((i - start) * radsPerIndex, time[i]);
+            }
+        }
     }
 
     draw(context) {
 
         const gl = this.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferParticles);
-        gl.vertexAttribPointer(this.aParticleTime0, 1, gl.FLOAT, false, 7 * 4, 0);
+        var stride = this.elementsPerParticle * 4;
+        gl.vertexAttribPointer(this.aParticleTime0, 1, gl.FLOAT, false, stride, 0);
         gl.enableVertexAttribArray(this.aParticleTime0);
         gl.vertexAttribDivisor(this.aParticleTime0, 1); // webgl2
 
-        gl.vertexAttribPointer(this.aParticlePos0, 3, gl.FLOAT, false, 7 * 4, 1 * 4);
+        gl.vertexAttribPointer(this.aParticlePos0, 3, gl.FLOAT, false, stride, 1 * 4);
         gl.enableVertexAttribArray(this.aParticlePos0);
         gl.vertexAttribDivisor(this.aParticlePos0, 1); // webgl2
 
-        gl.vertexAttribPointer(this.aParticleSpeed, 3, gl.FLOAT, false, 7 * 4, 4 * 4);
+        gl.vertexAttribPointer(this.aParticleSpeed, 3, gl.FLOAT, false, stride, 4 * 4);
         gl.enableVertexAttribArray(this.aParticleSpeed);
         gl.vertexAttribDivisor(this.aParticleSpeed, 1); // webgl2
+
+        gl.vertexAttribPointer(this.aParticleMod, 1, gl.FLOAT, false, stride, 7 * 4);
+        gl.enableVertexAttribArray(this.aParticleMod);
+        gl.vertexAttribDivisor(this.aParticleMod, 1); // webgl2        
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.shapeBuffer);
         gl.vertexAttribPointer(this.aParticleShape, 2, gl.FLOAT, false, 0, 0);
@@ -174,14 +213,14 @@ class PluginParticles extends Plugin {
         if (this.clock % 10 == 0) {
             for (i = 0; i < this.particles; i++) {
                 if (this.particlesData[i][0] === 0 && Math.random() < 0.4) {
-                    this.spawnParticle(i);   
+                    //this.spawnParticle(i);   
                 }
             }
         }
 
         for (i = 0; i < this.particles; i++) {
             if (this.particleAge(i) > 2000 + Math.random() * 200) {
-                this.spawnParticle(i);
+              //  this.spawnParticle(i);
             }
         }
 
@@ -213,7 +252,7 @@ class PluginParticles extends Plugin {
     spawnParticle(i) {
         const gl = this.gl;
 
-        var data = new Float32Array(7);
+        var data = new Float32Array(8);
         data[0] = Date.now() - this.time0;
     
         data[1] = (-0.5 + Math.random()) * 0.05;
@@ -223,10 +262,35 @@ class PluginParticles extends Plugin {
         data[4] = (-0.5 + Math.random()) * 0.5;
         data[5] = (-0.5 + Math.random()) * 0.2;
         data[6] = (-0.5 + Math.random()) * 0.5;
+        data[6] = (-0.5 + Math.random()) * 0.5;
+        data[7] = 1;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferParticles);
         this.particlesData[i] = data;
-        gl.bufferSubData(gl.ARRAY_BUFFER, i * 7 * 4, data);
+        gl.bufferSubData(gl.ARRAY_BUFFER, i * 8 * 4, data);
+    }
+
+    spawnNextParticle(angle, amplitude) {
+        const gl = this.gl;
+
+        var data = new Float32Array(8);
+        data[0] = Date.now() - this.time0;
+    
+        var angle2 = Date.now() / 50;
+        var mod2 = (Date.now() / 1000) % 5;
+        data[1] = 0.5 * Math.sin(angle2) + 0.1 * Math.sin(mod2 * angle2);
+        data[2] = 0.5 * Math.cos(angle2) + 0.1 * Math.cos(mod2 * angle2);
+        data[3] = 0;
+
+        data[4] = Math.sin(angle) * amplitude / -50;
+        data[5] = Math.cos(angle) * amplitude / -50;
+        data[6] = 0;
+        data[7] = amplitude;
+        var i = this.nextParticle;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferParticles);
+        this.particlesData[i] = data;
+        gl.bufferSubData(gl.ARRAY_BUFFER, i * 8 * 4, data);
+        this.nextParticle = (this.nextParticle + 1) % this.particlesData.length;
     }
 }
 
