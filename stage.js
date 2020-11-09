@@ -119,6 +119,9 @@ class Stage {
 
         this.context.clockMillis = Date.now() - this.pluginTime0;
         this.plugin.draw(this.context);
+
+        this.rotateX+=0.7;
+        this.rotateY+=0.3;
     }
 
     setRotateX(rotateX) {

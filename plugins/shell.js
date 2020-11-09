@@ -91,13 +91,13 @@ class PluginShell extends Plugin {
         // texutre
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        
+            
         const border = 0;
         const srcFormat = gl.ALPHA;
         const srcType = gl.UNSIGNED_BYTE;
-        const pixel = new Uint8Array(this.textureWidth * this.textureHeight * 4);
+        const pixel = new Uint8Array(this.textureWidth);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA,
-                    this.textureWidth, this.textureHeight, border, srcFormat, srcType,
+                    this.textureWidth, 1.0, border, srcFormat, srcType,
                     pixel);
         this.texture = texture;
     }
@@ -138,6 +138,9 @@ class PluginShell extends Plugin {
         gl.drawArrays(gl.TRIANGLES, 0, 720);
 
     }
+    getInputType() {
+        return "fft";
+    }    
 }
 
 pluginRegistry.add(new PluginShell())
