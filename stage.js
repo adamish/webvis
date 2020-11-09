@@ -21,12 +21,16 @@ class Stage {
 
         this.plugins = pluginRegistry.getAll();
         
-        this.next();
+        this.show();
         this.tick();
     }
 
     next() {
         this.pluginIndex = (this.pluginIndex + 1) % this.plugins.length;
+        this.show();
+    }
+    
+    show() {
         this.setPlugin(this.plugins[this.pluginIndex]);
     }
 
@@ -119,6 +123,9 @@ class Stage {
 
         this.context.clockMillis = Date.now() - this.pluginTime0;
         this.plugin.draw(this.context);
+
+        this.rotateX+=0.7;
+        this.rotateY+=0.3;
     }
 
     setRotateX(rotateX) {
