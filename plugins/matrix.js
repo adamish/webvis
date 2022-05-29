@@ -1,4 +1,7 @@
 class PluginMatrix extends Plugin {
+    getId() {
+        return "matrix";
+    }
 	getVertexShader() {
 		return `
             attribute vec4 aVertexPosition;

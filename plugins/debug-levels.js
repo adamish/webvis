@@ -1,6 +1,14 @@
+/*
+ * aVertexPositionN is just an index list
+ * vertex shader calculates position using index
+ * aVertexPositionZ is used to pass in sound data
+ */
 class DebugLevels extends Plugin {
-	getVertexShader() {
-		return `
+    getId() {
+        return "debug-levels";
+    }
+    getVertexShader() {
+        return `
             attribute float aVertexPositionN;
             attribute float aVertexPositionZ;
 
@@ -15,7 +23,6 @@ class DebugLevels extends Plugin {
 
               highp float rad = t + aVertexPositionN * 3.1415 * 2.0;
 
-
               highp float r = 1.2 * abs(cos(t));
               lowp float circle2Multipler = 3.0 + 8.0 * sin(t);
               lowp float circle2R = 0.4 + 0.1 * sin(-t * 0.3);
@@ -28,10 +35,10 @@ class DebugLevels extends Plugin {
               gl_PointSize = 2.0;
               vTextureCoord = vertexPosition;
             }`;
-	}
+    }
 
-	getFragmentShader() {
-		return `
+    getFragmentShader() {
+        return `
             uniform lowp float uClockMillis;        
             varying highp vec4 vTextureCoord;
 
@@ -42,7 +49,7 @@ class DebugLevels extends Plugin {
 
               gl_FragColor = vec4(r, g, b, 1.0);
           }`
-	}
+    }
 
     getInputType() {
         return "time-float";
@@ -55,7 +62,7 @@ class DebugLevels extends Plugin {
         this.uClockMillis = gl.getUniformLocation(shaderProgram, 'uClockMillis');
     }
 
-    init(gl, options) {        
+    init(gl, options) {
         this.gl = gl;
         this.width = options.timeBinCount;
         this.amplitudeIntoTime = 0;
@@ -68,7 +75,7 @@ class DebugLevels extends Plugin {
             positionsN.push(x / (this.width - 1));
         }
         positionsN.push(0);
-        
+
         gl.bufferData(gl.ARRAY_BUFFER,
             new Float32Array(positionsN),
             gl.STATIC_DRAW);
@@ -79,15 +86,15 @@ class DebugLevels extends Plugin {
         gl.bufferData(gl.ARRAY_BUFFER,
             new Float32Array(positionsZ),
             gl.DYNAMIC_DRAW);
-            
+
         this.bufferN = bufferN;
         this.bufferZ = bufferZ;
     }
 
-	writeTime(time) {
+    writeTime(time) {
         const gl = this.gl;
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);     
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, time);
         var bonus = new Float32Array(1);
         bonus[0] = time[0];
@@ -100,7 +107,7 @@ class DebugLevels extends Plugin {
             total += Math.abs(time[i]);
         }
         var average = total / n;
-        
+
         if (average > 0.01) {
             this.amplitudeIntoTime += 20;
         } else if (average > 0.02) {
@@ -122,10 +129,10 @@ class DebugLevels extends Plugin {
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
         gl.vertexAttribDivisor(this.vertexPositionZ, 0); // webgl2        
         gl.enableVertexAttribArray(this.vertexPositionZ);
-        
+
         gl.uniform1f(this.uClockMillis, this.amplitudeIntoTime);
         gl.lineWidth(10.0);
-        
+
         this.gl.drawArrays(this.gl.LINE_STRIP, 0, this.width + 1);
 
     }

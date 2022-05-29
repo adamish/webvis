@@ -1,6 +1,9 @@
 class PluginLandscape extends Plugin {
-	getVertexShader() {
-		return `
+    getId() {
+        return "landscape";
+    }
+    getVertexShader() {
+        return `
 		    attribute vec2 aVertexPositionXY;
 		    attribute float aVertexPositionZ;
 			
@@ -15,10 +18,10 @@ class PluginLandscape extends Plugin {
 		      vertexPositionRaw = vec3(vertexPosition);
 		      gl_PointSize = 1.0 + aVertexPositionZ;
 		    }`;
-	}
+    }
 
-	getFragmentShader() {
-		return `
+    getFragmentShader() {
+        return `
     		varying highp vec3 vertexPositionRaw;            
             uniform lowp float uClockMillis;
 
@@ -45,21 +48,21 @@ class PluginLandscape extends Plugin {
                 }                                
 	      		gl_FragColor = vec4(r, g, b, 1.0);
 	    	}`
-	}
+    }
 
-	loadVariables(gl, shaderProgram) {
-		this.vertexPositionXY = gl.getAttribLocation(shaderProgram, 'aVertexPositionXY');
+    loadVariables(gl, shaderProgram) {
+        this.vertexPositionXY = gl.getAttribLocation(shaderProgram, 'aVertexPositionXY');
         this.vertexPositionZ = gl.getAttribLocation(shaderProgram, 'aVertexPositionZ');
-        
-        this.uClockMillis = gl.getUniformLocation(shaderProgram, 'uClockMillis');
-	}
 
-	init(gl, options) {
-		this.insertPos = 0;
-		this.gl = gl;
-		this.width = options.frequencyBinCount;
-		this.height = 100;
-		this.bufferCyclic = new Float32Array(this.width * this.height);
+        this.uClockMillis = gl.getUniformLocation(shaderProgram, 'uClockMillis');
+    }
+
+    init(gl, options) {
+        this.insertPos = 0;
+        this.gl = gl;
+        this.width = options.frequencyBinCount;
+        this.height = 100;
+        this.bufferCyclic = new Float32Array(this.width * this.height);
         this.lightX = 0;
         this.lightY = 0;
         this.clock = 0;
@@ -69,7 +72,7 @@ class PluginLandscape extends Plugin {
         var positionsXY = [];
         var x = 0;
         var y = 0;
-       	for (y = 0; y < this.height; y++) {
+        for (y = 0; y < this.height; y++) {
             for (x = 0; x < this.width; x++) {
                 positionsXY.push(-0.5 + x / this.width);
                 positionsXY.push(2 * (-0.5 + y / this.height));
@@ -85,14 +88,14 @@ class PluginLandscape extends Plugin {
         gl.bufferData(gl.ARRAY_BUFFER,
             new Float32Array(positionsZ),
             gl.DYNAMIC_DRAW);
-            
+
         this.bufferXY = bufferXY;
         this.bufferZ = bufferZ;
-	}
+    }
 
-	writeFft(fft) {
+    writeFft(fft) {
         const gl = this.gl;
-                 
+
         var dest = this.insertPos * this.width;
         var valid = Math.min(fft.length, this.width);
         for (var i = 0; i < valid; i++) {
@@ -105,11 +108,11 @@ class PluginLandscape extends Plugin {
         // 2: 17 <== insert pos here
         // 3: 16
         // 4: 15
-        
-         // render (17, 16, 15) to position 0
+
+        // render (17, 16, 15) to position 0
         var headRows = this.height - this.insertPos;
         var headPortion = this.bufferCyclic.slice(this.insertPos * this.width);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);     
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);
         gl.bufferSubData(gl.ARRAY_BUFFER,
             0,
             headPortion);
@@ -119,8 +122,8 @@ class PluginLandscape extends Plugin {
         var tailPortion = this.bufferCyclic.slice(0, (tailRows * this.width));
         if (tailRows > 0) {
             gl.bufferSubData(gl.ARRAY_BUFFER,
-                    headRows * this.width * 4, // <== byte location
-                    tailPortion);
+                headRows * this.width * 4, // <== byte location
+                tailPortion);
 
         }
 
@@ -131,8 +134,8 @@ class PluginLandscape extends Plugin {
     }
 
     draw(context) {
-    	const gl = this.gl;
-    	gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferXY);
+        const gl = this.gl;
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferXY);
         gl.vertexAttribPointer(this.vertexPositionXY, 2, gl.FLOAT, false, 0, 0);
         gl.vertexAttribDivisor(this.vertexPositionXY, 0); // webgl2
         gl.enableVertexAttribArray(this.vertexPositionXY);
@@ -141,7 +144,7 @@ class PluginLandscape extends Plugin {
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
         gl.vertexAttribDivisor(this.vertexPositionZ, 0); // webgl2
         gl.enableVertexAttribArray(this.vertexPositionZ);
-        
+
         gl.uniform1f(this.uClockMillis, context.clockMillis);
 
         //this.gl.drawArrays(this.gl.POINTS, 0, this.width * this.height);
@@ -157,8 +160,8 @@ class PluginLandscape extends Plugin {
         gl.enableVertexAttribArray(this.vertexPositionZ);
         var y = 0;
         for (y = 0; y < this.height; y++) {
-        	this.gl.drawArrays(this.gl.LINE_STRIP, y * this.width, this.width - 4);
-		}
+            this.gl.drawArrays(this.gl.LINE_STRIP, y * this.width, this.width - 4);
+        }
 
         this.clock++;
     }

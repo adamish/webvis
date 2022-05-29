@@ -1,6 +1,9 @@
 class PluginShell extends Plugin {
-	getVertexShader() {
-		return `
+    getId() {
+        return "shell";
+    }
+    getVertexShader() {
+        return `
             attribute vec4 aVertexPosition;
             attribute vec2 aTextureCoord;
 
@@ -13,10 +16,10 @@ class PluginShell extends Plugin {
               gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
               vTextureCoord = aTextureCoord;
             }`;
-	}
+    }
 
-	getFragmentShader() {
-		return `
+    getFragmentShader() {
+        return `
             varying highp vec2 vTextureCoord;
 
             uniform sampler2D uSampler;
@@ -27,9 +30,9 @@ class PluginShell extends Plugin {
               mediump vec4 v = texture2D(uSampler, vec2(1.0 - sqrt(vTextureCoord.x * vTextureCoord.x + vTextureCoord.y * vTextureCoord.y), 0));
               gl_FragColor = vec4(min(3.0 * v.a, 1.0), 0.0, 0.0, 1.0);
             }`
-	}
+    }
 
-	loadVariables(gl, shaderProgram) {
+    loadVariables(gl, shaderProgram) {
         this.programInfo = {};
         this.programInfo.positionBuffer = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
         this.programInfo.textureCoord = gl.getAttribLocation(shaderProgram, 'aTextureCoord');
@@ -38,13 +41,13 @@ class PluginShell extends Plugin {
         this.programInfo.textureHeadOffset = gl.getUniformLocation(shaderProgram, 'uTextureHeadOffset');
         this.programInfo.textureHeight = gl.getUniformLocation(shaderProgram, 'uTextureHeight');
         this.programInfo.clock = gl.getUniformLocation(shaderProgram, 'uClock');
-	}
+    }
 
-	init(gl, options) {
+    init(gl, options) {
         this.gl = gl;
         this.textureWidth = options.frequencyBinCount;
         this.textureHeight = 1;
-    
+
         this.clock = 0;
 
         // positions
@@ -80,35 +83,35 @@ class PluginShell extends Plugin {
             positionsTexture.push(Math.sin(r));
             positionsTexture.push(0);
             positionsTexture.push(0);
-        }          
+        }
         gl.bufferData(gl.ARRAY_BUFFER,
             new Float32Array(positionsTexture),
             gl.STATIC_DRAW);
-            
+
         this.positionBuffer = positionBuffer;
         this.textureCoord = textureCoord;
 
         // texutre
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
-            
+
         const border = 0;
         const srcFormat = gl.ALPHA;
         const srcType = gl.UNSIGNED_BYTE;
         const pixel = new Uint8Array(this.textureWidth);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.ALPHA,
-                    this.textureWidth, 1.0, border, srcFormat, srcType,
-                    pixel);
+            this.textureWidth, 1.0, border, srcFormat, srcType,
+            pixel);
         this.texture = texture;
     }
 
-	writeFft(fft) {
+    writeFft(fft) {
         const gl = this.gl;
-        
+
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.textureWidth, 1, gl.ALPHA, gl.UNSIGNED_BYTE, fft);
-        
+
     }
 
     draw() {
@@ -117,11 +120,11 @@ class PluginShell extends Plugin {
         gl.uniform1i(this.programInfo.textureHeadOffset, this.textureHeadOffset);
         gl.uniform1i(this.programInfo.textureHeight, this.textureHeight);
         gl.uniform1i(this.programInfo.clock, this.clock);
-        
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoord);
         gl.vertexAttribPointer(this.programInfo.textureCoord, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.programInfo.textureCoord);
-    
+
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
         gl.vertexAttribPointer(this.programInfo.positionBuffer, 3, this.gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.programInfo.positionBuffer);
@@ -131,7 +134,7 @@ class PluginShell extends Plugin {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        
+
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.uniform1i(this.programInfo.uSampler, 0);
 
@@ -140,7 +143,7 @@ class PluginShell extends Plugin {
     }
     getInputType() {
         return "fft";
-    }    
+    }
 }
 
 pluginRegistry.add(new PluginShell())

@@ -8,8 +8,8 @@ class Input {
         const context = new AudioContext();
         this.analyser = context.createAnalyser();
         this.analyser.fftSize = 256;
-        this.analyser.minDecibels = -170;
-        this.analyser.maxDecibels = -5;
+        this.analyser.minDecibels = -128;
+        this.analyser.maxDecibels = 0;
         this.fftArray = new Uint8Array(this.analyser.frequencyBinCount);
         this.fftArrayFloat = new Float32Array(this.analyser.frequencyBinCount);
         this.frequencyBinCount = this.analyser.frequencyBinCount;

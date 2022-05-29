@@ -1,6 +1,9 @@
 class PluginSpirals extends Plugin {
-	getVertexShader() {
-		return `
+    getId() {
+        return "spirals";
+    }
+    getVertexShader() {
+        return `
             attribute float aVertexPositionN;
             attribute float aVertexPositionZ;
 
@@ -20,10 +23,10 @@ class PluginSpirals extends Plugin {
               gl_PointSize = 2.0;
               vTextureCoord = vec4(aVertexPositionN, aVertexPositionZ / 256.0, 0.0, 0.0);
             }`;
-	}
+    }
 
-	getFragmentShader() {
-		return `
+    getFragmentShader() {
+        return `
             uniform lowp float uClockMillis;        
             varying highp vec4 vTextureCoord;
 
@@ -34,19 +37,19 @@ class PluginSpirals extends Plugin {
 
               gl_FragColor = vec4(r, g, b, 1.0);
             }`
-	}
+    }
 
     getInputType() {
         return "fft-float";
     }
 
-	loadVariables(gl, shaderProgram) {
+    loadVariables(gl, shaderProgram) {
         this.vertexPositionXY = gl.getAttribLocation(shaderProgram, 'aVertexPositionN');
         this.vertexPositionZ = gl.getAttribLocation(shaderProgram, 'aVertexPositionZ');
         this.uClockMillis = gl.getUniformLocation(shaderProgram, 'uClockMillis');
-	}
+    }
 
-	init(gl, options) {        
+    init(gl, options) {
         this.gl = gl;
         this.width = options.timeBinCount;
 
@@ -57,7 +60,7 @@ class PluginSpirals extends Plugin {
         for (x = 0; x < this.width; x++) {
             positionsN.push(x / this.width);
         }
-        
+
         gl.bufferData(gl.ARRAY_BUFFER,
             new Float32Array(positionsN),
             gl.STATIC_DRAW);
@@ -68,15 +71,15 @@ class PluginSpirals extends Plugin {
         gl.bufferData(gl.ARRAY_BUFFER,
             new Float32Array(positionsZ),
             gl.DYNAMIC_DRAW);
-            
+
         this.bufferN = bufferN;
         this.bufferZ = bufferZ;
     }
 
-	writeFft(time) {
+    writeFft(time) {
         const gl = this.gl;
-                
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);     
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.bufferZ);
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, time);
     }
 
@@ -92,10 +95,10 @@ class PluginSpirals extends Plugin {
         gl.vertexAttribPointer(this.vertexPositionZ, 1, gl.FLOAT, false, 0, 0);
         gl.vertexAttribDivisor(this.vertexPositionZ, 0); // webgl2        
         gl.enableVertexAttribArray(this.vertexPositionZ);
-        
+
         gl.uniform1f(this.uClockMillis, context.clockMillis);
         gl.lineWidth(3.0);
-        
+
         this.gl.drawArrays(this.gl.LINE_STRIP, 0, this.width);
 
     }

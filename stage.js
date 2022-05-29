@@ -6,7 +6,7 @@ class Stage {
         this.clock = 0;
         this.context = {};
     }
-    
+
     init(target, input) {
         this.gl = target.getContext('webgl2', { preserveDrawingBuffer: true });
 
@@ -20,7 +20,14 @@ class Stage {
         this.pluginIndex = 0;
 
         this.plugins = pluginRegistry.getAll();
-        
+
+        var url = new URL(window.location.href);
+        var pluginId = url.searchParams.get("plugin");
+        if (pluginId) {
+            var each;
+            this.pluginIndex = pluginRegistry.indexOf(pluginId);
+        }
+
         this.show();
         this.tick();
     }
@@ -29,9 +36,11 @@ class Stage {
         this.pluginIndex = (this.pluginIndex + 1) % this.plugins.length;
         this.show();
     }
-    
+
     show() {
-        this.setPlugin(this.plugins[this.pluginIndex]);
+        var plugin = this.plugins[this.pluginIndex];
+        console.log("Showing " + plugin.getId());
+        this.setPlugin(plugin);
     }
 
     tick() {
@@ -46,7 +55,7 @@ class Stage {
         requestAnimationFrame(this.tick.bind(this));
         this.clock++;
     }
-              
+
     setPlugin(plugin) {
         const gl = this.gl;
 
@@ -64,7 +73,7 @@ class Stage {
         };
         this.plugin.loadVariables(gl, shaderProgram);
 
-        this.plugin.init(gl, {frequencyBinCount: this.input.getFrequencyBinCount(), timeBinCount: this.input.getTimeBinCount()});
+        this.plugin.init(gl, { frequencyBinCount: this.input.getFrequencyBinCount(), timeBinCount: this.input.getTimeBinCount() });
         this.pluginTime0 = Date.now();
     }
 
@@ -124,8 +133,17 @@ class Stage {
         this.context.clockMillis = Date.now() - this.pluginTime0;
         this.plugin.draw(this.context);
 
-        this.rotateX+=0.7;
-        this.rotateY+=0.3;
+        this.rotateX += 0.7;
+        this.rotateY += 0.3;
+
+        if (this.plugin.getRotationPreference) {
+            var rotationPref = this.plugin.getRotationPreference();
+            if (rotationPref) {
+                this.rotateX = rotationPref[0];
+                this.rotateY = rotationPref[1];
+                this.rotateZ = rotationPref[2];
+            }
+        }
     }
 
     setRotateX(rotateX) {
